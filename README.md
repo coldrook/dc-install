@@ -7,40 +7,53 @@ ssh 端口设置, 密钥 or 密码登录
 ```sh
 bash <(curl -sL https://raw.githubusercontent.com/coldrook/CyberSentry/refs/heads/main/install.sh)
 ```
-状态查看
+## 服务管理
+
+```bash
+# 状态查看
 systemctl status cowrie
 systemctl status fail2ban
 ufw status
 
-日志查看
+# 日志查看
 tail -f /opt/cowrie/var/log/cowrie/cowrie.log
 journalctl -u cowrie -f
 tail -f /var/log/fail2ban.log
 
-服务控制
+# 服务控制
 systemctl start|stop|restart cowrie
 systemctl start|stop|restart fail2ban
+```
 
-停止服务
+## 安全建议
+
+1. 安装完成后：
+   - 保存显示的 SSH 端口号
+   - 备份生成的 SSH 密钥（如果有）
+   - 测试新配置前保留当前会话
+2. 防火墙配置：
+   - 确保必要端口已开放
+   - 建议启用 UFW
+   - 定期检查防火墙规则
+3. 日常维护：
+   - 定期检查系统日志
+   - 监控蜜罐日志
+   - 及时更新系统
+
+## 卸载方法
+
+```bash
+# 停止服务
 systemctl stop cowrie
 systemctl disable cowrie
 
-删除文件
+# 删除文件
 rm -rf /opt/cowrie
 rm /etc/systemd/system/cowrie.service
 
-重载服务
+# 重载服务
 systemctl daemon-reload
-
-=== 常用命令 ===
-查看服务状态:
-systemctl status cowrie
-systemctl status fail2ban
-ufw status
-查看日志:
-tail -f /opt/cowrie/var/log/cowrie/cowrie.log
-journalctl -u cowrie -f
-tail -f /var/log/fail2ban.log
+```
 
 
 简易的logrotate安装脚本，对全局日志进行了限制
