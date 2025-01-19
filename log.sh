@@ -37,9 +37,12 @@ NEW_CONFIG="
     endscript
 "
 
-# 使用 sed 替换 {} 之间的内容
+# 转义 NEW_CONFIG 中的特殊字符
+ESCAPED_NEW_CONFIG=$(echo "$NEW_CONFIG" | sed 's/[\\\/&]/\\&/g')
+
+# 使用 sed 替换 {} 之间的内容，使用 @ 作为分隔符
 echo "修改 /etc/logrotate.d/rsyslog 文件..."
-MODIFIED_CONFIG=$(echo "$OLD_CONFIG" | sed -E "s/\{[^{}]*\}/{\n$NEW_CONFIG\n}/")
+MODIFIED_CONFIG=$(echo "$OLD_CONFIG" | sed -E "s@\{[^{}]*\}@{\n$ESCAPED_NEW_CONFIG\n}@")
 
 # 将修改后的内容写回文件
 echo "$MODIFIED_CONFIG" | sudo tee /etc/logrotate.d/rsyslog > /dev/null
