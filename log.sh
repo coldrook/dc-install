@@ -6,14 +6,18 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-# 获取 /etc/logrotate.d/rsyslog 文件内容
-if [[ ! -f /etc/logrotate.d/rsyslog ]]; then
-  echo "错误: /etc/logrotate.d/rsyslog 文件不存在。"
-  exit 1
+# 安装必要的软件包
+echo "正在安装 logrotate, cron, 和 rsyslog..."
+sudo apt update
+sudo apt install -y logrotate cron rsyslog
+
+# 备份 /etc/logrotate.d/rsyslog
+if [[ -f /etc/logrotate.d/rsyslog ]]; then
+  echo "正在备份 /etc/logrotate.d/rsyslog..."
+  sudo cp /etc/logrotate.d/rsyslog /etc/logrotate.d/rsyslog.bak
+else
+  echo "警告: /etc/logrotate.d/rsyslog 文件不存在，跳过备份。"
 fi
-echo "原始 /etc/logrotate.d/rsyslog 文件内容:"
-sudo cat /etc/logrotate.d/rsyslog
-OLD_CONFIG=$(sudo cat /etc/logrotate.d/rsyslog)
 
 # 定义新的配置内容
 NEW_CONFIG=$(cat <<EOF
@@ -32,44 +36,39 @@ NEW_CONFIG=$(cat <<EOF
 }
 EOF
 )
-echo "新的配置内容:"
-echo "$NEW_CONFIG"
 
 # 使用 awk 替换配置块
-echo "使用 awk 尝试匹配和替换..."
+echo "使用 awk 替换配置块..."
+OLD_CONFIG=$(sudo cat /etc/logrotate.d/rsyslog)
 MODIFIED_CONFIG=$(echo "$OLD_CONFIG" | awk -v new_config="$NEW_CONFIG" '
 BEGIN {
     in_block = 0
 }
 /^\{/ {
     in_block = 1
-    print "找到配置块开始: " $0
     print new_config
     next
 }
 /^}/ {
     in_block = 0
-    print "找到配置块结束: " $0
     next
 }
 {
     if (!in_block) {
         print
-    } else {
-        print "忽略行: " $0
     }
 }
 ')
-echo "修改后的配置内容:"
-echo "$MODIFIED_CONFIG"
 
-# 将修改后的内容写回文件
 echo "$MODIFIED_CONFIG" | sudo tee /etc/logrotate.d/rsyslog > /dev/null
 echo "写入文件完成"
 
-# 检查文件内容
-echo "修改后的 /etc/logrotate.d/rsyslog 文件内容:"
-sudo cat /etc/logrotate.d/rsyslog
+# 检查 logrotate 服务状态
+echo "正在检查 logrotate 服务状态..."
+echo "logrotate.service 状态:"
+sudo systemctl status logrotate.service
+echo "logrotate.timer 状态:"
+sudo systemctl status logrotate.timer
 
 echo "logrotate 配置完成。"
 exit 0
