@@ -45,6 +45,9 @@ ESCAPED_NEW_CONFIG=$(printf %q "$NEW_CONFIG")
 echo "修改 /etc/logrotate.d/rsyslog 文件..."
 MODIFIED_CONFIG=$(echo "$OLD_CONFIG" | sed -E -z "s@{[^}]*}@$(printf '%s\n' "{\n$ESCAPED_NEW_CONFIG\n}")@g")
 
+# 使用 sed 的 e 选项来执行 shell 命令，并将结果传递给 sed
+MODIFIED_CONFIG=$(echo "$OLD_CONFIG" | sed -E -z "s@{[^}]*}@$(printf '%s\n' "{\n$ESCAPED_NEW_CONFIG\n}")@g")
+
 # 将修改后的内容写回文件
 echo "$MODIFIED_CONFIG" | sudo tee /etc/logrotate.d/rsyslog > /dev/null
 
