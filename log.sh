@@ -3,6 +3,7 @@
 # 脚本名称: configure_logrotate_rsyslog.sh
 # 描述: 配置 logrotate 来管理 rsyslog 日志，实现按周轮询，大小限制和保留历史版本
 #       仅修改 /etc/logrotate.d/rsyslog 文件中 {} 内的内容
+#       兼容 Debian 和 Ubuntu
 
 # 检查是否以 root 用户运行
 if [[ $EUID -ne 0 ]]; then
@@ -42,7 +43,7 @@ ESCAPED_NEW_CONFIG=$(printf %q "$NEW_CONFIG")
 
 # 使用 sed 替换 {} 之间的内容，使用 @ 作为分隔符
 echo "修改 /etc/logrotate.d/rsyslog 文件..."
-MODIFIED_CONFIG=$(echo "$OLD_CONFIG" | sed -E "s@\{[^{}]*\}@{\n$ESCAPED_NEW_CONFIG\n}@")
+MODIFIED_CONFIG=$(echo "$OLD_CONFIG" | sed -E -z "s@{[^}]*}@$(printf '%s\n' "{\n$ESCAPED_NEW_CONFIG\n}")@g")
 
 # 将修改后的内容写回文件
 echo "$MODIFIED_CONFIG" | sudo tee /etc/logrotate.d/rsyslog > /dev/null
