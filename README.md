@@ -75,6 +75,30 @@ bash <(curl -sL https://raw.githubusercontent.com/coldrook/vps-easyset/refs/head
 curl -L https://raw.githubusercontent.com/spiritLHLS/one-click-installation-script/main/repair_scripts/resize_journal.sh -o resize_journal.sh && chmod +x resize_journal.sh && bash resize_journal.sh
 ```
 
+## claw xanmod
+   -- 稀烂的IP质量
+
+### 脚本安装
+
+```sh
+bash <(curl -sL https://raw.githubusercontent.com/coldrook/claw-XanMod/refs/heads/main/xanmod.sh)
+```
+### 内核优化
+
+```sh
+wget -O clawtcp.sh "https://raw.githubusercontent.com/coldrook/claw-XanMod/refs/heads/main/clawtcp.sh" && chmod +x clawtcp.sh && ./clawtcp.sh
+```
+
+## xanmod 内核
+
+   - https://github.com/ylx2016/kernel/
+   - xanmod官方MAIN版本默认为BBR3(替换了原来的BBR)，仅支持Debian/Ubuntu    
+   - 查询当前bbr  cat /sys/module/tcp_bbr/version 或者 modinfo tcp_bbr
+
+```sh
+wget -O tcpx.sh "https://github.com/ylx2016/Linux-NetSpeed/raw/master/tcpx.sh" && chmod +x tcpx.sh && ./tcpx.sh
+```
+
 ## 简易的docker-compose安装脚本，对全局日志进行了限制
 
 ```sh
