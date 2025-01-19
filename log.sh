@@ -36,9 +36,16 @@ NEW_CONFIG=$(cat <<EOF
 EOF
 )
 
+# 使用 printf %q 转义 NEW_CONFIG 中的特殊字符
+ESCAPED_NEW_CONFIG=$(printf %q "$NEW_CONFIG")
+
 # 替换 {} 之间的内容
 echo "修改 /etc/logrotate.d/rsyslog 文件..."
-MODIFIED_CONFIG=$(echo "$OLD_CONFIG" | sed -E -z 's@\{[^}]*\}@'"$NEW_CONFIG"'@')
+# 使用 \{.*?\} 正则表达式，并使用 printf 转义替换字符串
+# 使用一个临时变量存储替换字符串，并确保它被正确转义
+REPLACEMENT=$(printf '%s\n' "$ESCAPED_NEW_CONFIG")
+MODIFIED_CONFIG=$(echo "$OLD_CONFIG" | sed -E -z "s@\{.*?\}@${REPLACEMENT//@/\\@}@g")
+
 
 # 将修改后的内容写回文件
 echo "$MODIFIED_CONFIG" | sudo tee /etc/logrotate.d/rsyslog > /dev/null
