@@ -16,6 +16,8 @@ if [[ ! -f /etc/logrotate.d/rsyslog ]]; then
   echo "错误: /etc/logrotate.d/rsyslog 文件不存在。"
   exit 1
 fi
+echo "原始 /etc/logrotate.d/rsyslog 文件内容:"
+sudo cat /etc/logrotate.d/rsyslog
 OLD_CONFIG=$(sudo cat /etc/logrotate.d/rsyslog)
 
 # 定义新的配置内容
@@ -35,17 +37,23 @@ NEW_CONFIG=$(cat <<EOF
 }
 EOF
 )
+echo "新的配置内容:"
+echo "$NEW_CONFIG"
 
 # 使用 awk 替换 {} 之间的内容 (非贪婪匹配)
 echo "修改 /etc/logrotate.d/rsyslog 文件..."
 MODIFIED_CONFIG=$(echo "$OLD_CONFIG" | awk -v new_config="$NEW_CONFIG" '{
+    print "原始行: " $0
     gsub(/\{[^\}]*\}/, new_config)
+    print "修改后行: " $0
     print
 }')
-
+echo "修改后的配置内容:"
+echo "$MODIFIED_CONFIG"
 
 # 将修改后的内容写回文件
 echo "$MODIFIED_CONFIG" | sudo tee /etc/logrotate.d/rsyslog > /dev/null
+echo "写入文件完成"
 
 # 检查 logrotate 服务状态
 echo "检查 logrotate 服务状态..."
