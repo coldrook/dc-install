@@ -67,6 +67,23 @@ restore_config() {
   fi
 }
 
+# 函数：备份配置文件
+backup_config() {
+  if [[ -f /etc/logrotate.d/rsyslog ]]; then
+    echo "正在备份 /etc/logrotate.d/rsyslog..."
+    sudo cp /etc/logrotate.d/rsyslog /etc/logrotate.d/rsyslog.bak
+  else
+    echo "警告: /etc/logrotate.d/rsyslog 文件不存在，跳过备份。"
+  fi
+}
+
+# 检查 /etc/logrotate.d 文件夹和 rsyslog 文件是否存在
+if [[ -d /etc/logrotate.d ]]; then
+    if [[ -f /etc/logrotate.d/rsyslog ]]; then
+        backup_config # 如果存在，先备份
+    fi
+fi
+
 # 主菜单
 while true; do
   echo "请选择操作:"
@@ -77,13 +94,6 @@ while true; do
 
   case $choice in
     1)
-      # 备份 /etc/logrotate.d/rsyslog
-      if [[ -f /etc/logrotate.d/rsyslog ]]; then
-        echo "正在备份 /etc/logrotate.d/rsyslog..."
-        sudo cp /etc/logrotate.d/rsyslog /etc/logrotate.d/rsyslog.bak
-      else
-        echo "警告: /etc/logrotate.d/rsyslog 文件不存在，跳过备份。"
-      fi
       replace_config
       break
       ;;
