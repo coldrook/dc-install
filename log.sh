@@ -34,13 +34,14 @@ fi
 if [ -f "/etc/logrotate.d/rsyslog" ]; then
     echo "/etc/logrotate.d/rsyslog 文件存在，正在修改..."
 
-    # 合并操作：检查并修改 maxsize, rotate 和 weekly
+    # 合并操作：检查并修改 maxsize, rotate, weekly 和 compress
     sudo sed -i '/{/{
         /maxsize 100M/!a \ \ \ \ maxsize 100M
         s/rotate [0-9]\+/rotate 3/g
         s/daily/weekly/g
+        /compress/!a \ \ \ \ compress
     }' /etc/logrotate.d/rsyslog
-    echo "已确保 maxsize 100M, rotate 3 和 weekly 配置在 {} 内部。"
+    echo "已确保 maxsize 100M, rotate 3, weekly 和 compress 配置在 {} 内部。"
 
 else
     echo "/etc/logrotate.d/rsyslog 文件不存在，正在创建..."
