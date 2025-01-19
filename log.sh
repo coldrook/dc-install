@@ -36,10 +36,10 @@ NEW_CONFIG=$(cat <<EOF
 EOF
 )
 
-# 使用 awk 替换 {} 之间的内容
+# 使用 awk 替换 {} 之间的内容 (非贪婪匹配)
 echo "修改 /etc/logrotate.d/rsyslog 文件..."
 MODIFIED_CONFIG=$(echo "$OLD_CONFIG" | awk -v new_config="$NEW_CONFIG" '{
-    gsub(/\{.*\}/, new_config)
+    gsub(/\{[^\}]*\}/, new_config)
     print
 }')
 
@@ -51,6 +51,10 @@ echo "$MODIFIED_CONFIG" | sudo tee /etc/logrotate.d/rsyslog > /dev/null
 echo "检查 logrotate 服务状态..."
 sudo systemctl status logrotate.service
 sudo systemctl status logrotate.timer
+
+# 检查文件内容
+echo "修改后的 /etc/logrotate.d/rsyslog 文件内容:"
+sudo cat /etc/logrotate.d/rsyslog
 
 echo "logrotate 配置完成。"
 exit 0
