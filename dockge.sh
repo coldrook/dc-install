@@ -103,13 +103,37 @@ case "$operation" in
     2)
         # 卸载部分
         echo "开始卸载 Dockge..."
-        read -p "请输入 Dockge 安装目录 (例如: /opt/dockge 或 /home/dockge 或自定义目录): " DOCKGE_PATH
-        read -p "请输入 Dockge stacks 目录 (例如: /opt/stacks 或 /home/stacks 或自定义目录): " STACKS_PATH
+        echo "请选择卸载位置:"
+        echo "1. 默认位置 (/opt/stacks 和 /opt/dockge)"
+        echo "2. Home 位置 (/home/stacks 和 /home/dockge)"
+        echo "3. 自定义位置"
+        read -p "请输入选项 (1/2/3): " uninstall_choice
 
-        if [ -z "$DOCKGE_PATH" ] || [ -z "$STACKS_PATH" ]; then
-            echo "错误：安装目录和stacks目录不能为空。"
-            exit 1
-        fi
+        case "$uninstall_choice" in
+            1)
+                echo "选择默认位置卸载..."
+                STACKS_PATH="/opt/stacks"
+                DOCKGE_PATH="/opt/dockge"
+                ;;
+            2)
+                echo "选择 Home 位置卸载..."
+                STACKS_PATH="/home/stacks"
+                DOCKGE_PATH="/home/dockge"
+                ;;
+            3)
+                read -p "请输入自定义 stacks 目录路径 (例如: /mnt/my_stacks): " STACKS_PATH
+                read -p "请输入自定义 dockge 目录路径 (例如: /mnt/my_dockge): " DOCKGE_PATH
+                if [ -z "$STACKS_PATH" ] || [ -z "$DOCKGE_PATH" ]; then
+                    echo "错误：自定义路径不能为空。请重新运行脚本。"
+                    exit 1
+                fi
+                ;;
+            *)
+                echo "无效的选项，请重新运行脚本。"
+                exit 1
+                ;;
+        esac
+
 
         # 停止并删除容器
         echo "正在停止并删除 Dockge 容器..."
