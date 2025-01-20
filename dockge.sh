@@ -185,7 +185,7 @@ case "$operation" in
         # 压缩备份文件
         BACKUP_FILE="$DOCKGE_PARENT_DIR/dockge_backup_$(date +%Y%m%d%H%M%S).tar.gz"
         echo "正在备份文件到：$BACKUP_FILE"
-        tar -czvf "$BACKUP_FILE" "$DOCKGE_PATH"
+        tar -czvf "$BACKUP_FILE" "$DOCKGE_PATH" "$STACKS_PATH"
 
          # 检查备份是否成功
         if [ $? -ne 0 ]; then
@@ -217,4 +217,3 @@ case "$operation" in
         exit 1
         ;;
 esac
-
