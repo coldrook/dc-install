@@ -165,19 +165,10 @@ case "$operation" in
         esac
 
 
-        # 停止并删除容器
-        echo "正在停止并删除 Dockge 容器..."
+        # 停止 Dockge 容器
+        echo "正在停止 Dockge 容器..."
         cd "$DOCKGE_PATH"
-        docker compose down
-
-        # 获取 Dockge 使用的镜像
-        DOCKGE_IMAGE=$(docker compose images | awk 'NR==2 {print $3}')
-
-         # 删除镜像
-        if [ -n "$DOCKGE_IMAGE" ]; then
-            echo "正在删除 Dockge 镜像：$DOCKGE_IMAGE"
-            docker rmi "$DOCKGE_IMAGE"
-        fi
+        docker compose stop
 
         # 获取上一级目录
         DOCKGE_PARENT_DIR=$(dirname "$DOCKGE_PATH")
@@ -206,11 +197,7 @@ case "$operation" in
         echo "正在清理 Docker 网络..."
         docker network prune -f
 
-        # 删除未使用的镜像
-        echo "正在清理未使用的 Docker 镜像..."
-        docker image prune -a -f
-
-        echo "Dockge 卸载完成！备份文件已保存到：$BACKUP_FILE"
+        echo "Dockge 卸载完成，但 Dockge 运行的镜像已保留！备份文件已保存到：$BACKUP_FILE"
         ;;
     *)
         echo "无效的选项，请重新运行脚本。"
