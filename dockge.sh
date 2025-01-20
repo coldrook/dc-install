@@ -5,14 +5,14 @@ STACKS_PATH=""
 DOCKGE_PATH=""
 PORT="5001"
 BACKUP_FILE=""
+DOCKGE_PARENT_DIR=""
 
 # 打印欢迎信息
 echo "欢迎使用 Dockge 安装/更新/卸载/恢复脚本!"
 echo "请选择操作:"
 echo "1. 安装/更新 Dockge"
 echo "2. 卸载 Dockge"
-echo "3. 恢复 Dockge 备份"
-read -p "请输入选项 (1/2/3): " operation
+read -p "请输入选项 (1/2): " operation
 
 case "$operation" in
     1)
@@ -136,6 +136,83 @@ case "$operation" in
         echo "Dockge 安装/更新完成!"
         echo "访问地址：http://$IP_ADDRESS:$PORT"
         echo "请使用 docker ps 查看容器是否正常运行"
+        
+        # 安装完成后询问是否恢复
+        read -p "是否需要从备份恢复？ (y/n): " restore_choice
+        case "$restore_choice" in
+            [yY] )
+                # 恢复备份部分
+                echo "开始恢复 Dockge 备份..."
+                echo "请选择备份位置:"
+                echo "1. 默认位置 (/opt)"
+                echo "2. Home 位置 (/home)"
+                echo "3. 自定义位置"
+                read -p "请输入选项 (1/2/3): " restore_location_choice
+
+                case "$restore_location_choice" in
+                    1)
+                        DOCKGE_PARENT_DIR="/opt"
+                        ;;
+                    2)
+                        DOCKGE_PARENT_DIR="/home"
+                        ;;
+                    3)
+                        read -p "请输入自定义备份目录路径 (例如: /mnt/my_backups): " DOCKGE_PARENT_DIR
+                        if [ -z "$DOCKGE_PARENT_DIR" ]; then
+                            echo "错误：自定义路径不能为空。请重新运行脚本。"
+                            exit 1
+                        fi
+                        ;;
+                    *)
+                        echo "无效的选项，跳过恢复步骤。"
+                        ;;
+                esac
+                
+                if [ -n "$DOCKGE_PARENT_DIR" ]; then
+                # 查找最近的备份文件
+                    LATEST_BACKUP=$(find "$DOCKGE_PARENT_DIR" -maxdepth 1 -type f -name "dockge_backup_*.tar.gz" | sort -r | head -n 1)
+
+                    # 判断是否存在备份文件
+                    if [ -z "$LATEST_BACKUP" ]; then
+                        echo "未找到备份文件，跳过恢复步骤。"
+                    else
+                        echo "找到最近的备份文件：$LATEST_BACKUP"
+
+                        # 询问用户是否恢复备份
+                        read -p "是否要恢复此备份？ (y/n): " confirm_restore
+                        case "$confirm_restore" in
+                            [yY] )
+                                echo "开始恢复备份..."
+                                echo "警告：恢复备份将覆盖现有文件！"
+                                # 获取备份文件中的目录路径
+                                BACKUP_CONTENT=$(tar -tf "$LATEST_BACKUP" | head -n 1)
+                                DOCKGE_PATH=$(echo "$BACKUP_CONTENT" | awk -F/ '{print "/"$2"/"$3}')
+                                STACKS_PATH=$(echo "$BACKUP_CONTENT" | awk -F/ '{print "/"$2"/stacks"}')
+                                # 解压备份文件 (需要根据实际情况调整解压路径)
+                                tar -xzvf "$LATEST_BACKUP" -C "$DOCKGE_PARENT_DIR"
+                                echo "备份恢复完成。"
+                                # 输出访问地址
+                                echo "Dockge 恢复完成!"
+                                echo "访问地址：http://$IP_ADDRESS:$PORT"
+                                echo "请使用 docker ps 查看容器是否正常运行"
+                                ;;
+                            [nN] )
+                                echo "跳过备份恢复。"
+                                ;;
+                            * )
+                                echo "无效的输入，跳过备份恢复。"
+                                ;;
+                        esac
+                    fi
+                fi
+                ;;
+            [nN] )
+                echo "跳过备份恢复。"
+                ;;
+            * )
+                echo "无效的输入，跳过备份恢复。"
+                ;;
+        esac
         ;;
     2)
         # 卸载部分
@@ -218,90 +295,6 @@ case "$operation" in
         docker image prune -a -f
 
         echo "Dockge 卸载完成！备份文件已保存到：$BACKUP_FILE"
-        ;;
-    3)
-        # 恢复备份部分
-        echo "开始恢复 Dockge 备份..."
-        echo "请选择备份位置:"
-        echo "1. 默认位置 (/opt)"
-        echo "2. Home 位置 (/home)"
-        echo "3. 自定义位置"
-        read -p "请输入选项 (1/2/3): " restore_choice
-
-        case "$restore_choice" in
-            1)
-                DOCKGE_PARENT_DIR="/opt"
-                ;;
-            2)
-                DOCKGE_PARENT_DIR="/home"
-                ;;
-            3)
-                read -p "请输入自定义备份目录路径 (例如: /mnt/my_backups): " DOCKGE_PARENT_DIR
-                if [ -z "$DOCKGE_PARENT_DIR" ]; then
-                    echo "错误：自定义路径不能为空。请重新运行脚本。"
-                    exit 1
-                fi
-                ;;
-            *)
-                echo "无效的选项，请重新运行脚本。"
-                exit 1
-                ;;
-        esac
-        
-        # 查找最近的备份文件
-        LATEST_BACKUP=$(find "$DOCKGE_PARENT_DIR" -maxdepth 1 -type f -name "dockge_backup_*.tar.gz" | sort -r | head -n 1)
-
-        # 判断是否存在备份文件
-        if [ -z "$LATEST_BACKUP" ]; then
-            echo "未找到备份文件，跳过恢复步骤。"
-        else
-            echo "找到最近的备份文件：$LATEST_BACKUP"
-
-            # 询问用户是否恢复备份
-            read -p "是否要恢复此备份？ (y/n): " choice
-            case "$choice" in
-                [yY] )
-                    echo "开始恢复备份..."
-                    echo "警告：恢复备份将覆盖现有文件！"
-                    # 获取备份文件中的目录路径
-                    BACKUP_CONTENT=$(tar -tf "$LATEST_BACKUP" | head -n 1)
-                    DOCKGE_PATH=$(echo "$BACKUP_CONTENT" | awk -F/ '{print "/"$2"/"$3}')
-                    STACKS_PATH=$(echo "$BACKUP_CONTENT" | awk -F/ '{print "/"$2"/stacks"}')
-                    # 解压备份文件 (需要根据实际情况调整解压路径)
-                    tar -xzvf "$LATEST_BACKUP" -C "$DOCKGE_PARENT_DIR"
-                    echo "备份恢复完成。"
-                    # 获取所有 IPv4 地址，并取最后一个
-                    IPV4_ADDRESSES=$(ip -4 route get 1 2>/dev/null | grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' | tail -n 1)
-                    if [ -z "$IPV4_ADDRESSES" ]; then
-                        IPV4_ADDRESSES=$(hostname -I | awk '{print $NF}' 2>/dev/null)
-                    fi
-                    
-                    # 获取 IPv6 地址
-                    IPV6_ADDRESS=$(ip -6 route get 1 2>/dev/null | awk '{print $NF;exit}')
-
-                    # 选择 IP 地址
-                    if [ -n "$IPV4_ADDRESSES" ]; then
-                        IP_ADDRESS="$IPV4_ADDRESSES"
-                    elif [ -n "$IPV6_ADDRESS" ] && [[ "$IPV6_ADDRESS" != "1" ]]; then
-                        IP_ADDRESS="[$IPV6_ADDRESS]" # IPv6 地址需要用方括号括起来
-                    else
-                        IP_ADDRESS="localhost" # 如果都获取不到，则使用 localhost
-                        echo "无法获取有效的 IPv4 或 IPv6 地址，回退到使用 localhost。"
-                    fi
-
-                    # 输出访问地址
-                    echo "Dockge 恢复完成!"
-                    echo "访问地址：http://$IP_ADDRESS:$PORT"
-                    echo "请使用 docker ps 查看容器是否正常运行"
-                    ;;
-                [nN] )
-                    echo "跳过备份恢复。"
-                    ;;
-                * )
-                    echo "无效的输入，跳过备份恢复。"
-                    ;;
-            esac
-        fi
         ;;
     *)
         echo "无效的选项，请重新运行脚本。"
