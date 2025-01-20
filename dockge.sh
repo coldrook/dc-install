@@ -27,7 +27,7 @@ case "$operation" in
                 echo "选择 Home 位置安装..."
                 STACKS_PATH="/home/stacks"
                 DOCKGE_PATH="/home/dockge"
-                read -p "请输入自定义端口号 (例如: 57949): " PORT
+                 read -p "请输入自定义端口号 (例如: 57949): " PORT
                 # 检查端口是否为空
                 if [ -z "$PORT" ]; then
                   PORT="5001" # 如果用户没有输入，则使用默认端口
@@ -81,20 +81,23 @@ case "$operation" in
         fi
 
         # 获取 IPv4 地址
-        IPV4_ADDRESS=$(ip -4 route get 1 | awk '{print $NF;exit}' 2>/dev/null)
+        IPV4_ADDRESS=$(ip -4 route get 1 | grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' 2>/dev/null)
+        if [ -z "$IPV4_ADDRESS" ]; then
+            IPV4_ADDRESS=$(hostname -I | awk '{print $1}' 2>/dev/null)
+        fi
 
         # 获取 IPv6 地址
         IPV6_ADDRESS=$(ip -6 route get 1 2>/dev/null | awk '{print $NF;exit}')
 
         # 选择 IP 地址
-        if [ -n "$IPV4_ADDRESS" ] && [[ "$IPV4_ADDRESS" != "0" ]]; then
+        if [ -n "$IPV4_ADDRESS" ]; then
            IP_ADDRESS="$IPV4_ADDRESS"
         elif [ -n "$IPV6_ADDRESS" ] && [[ "$IPV6_ADDRESS" != "1" ]]; then
             IP_ADDRESS="[$IPV6_ADDRESS]" # IPv6 地址需要用方括号括起来
         else
             IP_ADDRESS="localhost" # 如果都获取不到，则使用 localhost
+            echo "无法获取有效的 IPv4 或 IPv6 地址，回退到使用 localhost。"
         fi
-
 
         # 输出访问地址
         echo "Dockge 安装完成!"
