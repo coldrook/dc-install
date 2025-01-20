@@ -125,10 +125,19 @@ case "$operation" in
             docker rmi "$DOCKGE_IMAGE"
         fi
 
+        # 获取上一级目录
+        DOCKGE_PARENT_DIR=$(dirname "$DOCKGE_PATH")
+
         # 压缩备份文件
-        BACKUP_FILE="$DOCKGE_PATH/dockge_backup_$(date +%Y%m%d%H%M%S).tar.gz"
+        BACKUP_FILE="$DOCKGE_PARENT_DIR/dockge_backup_$(date +%Y%m%d%H%M%S).tar.gz"
         echo "正在备份文件到：$BACKUP_FILE"
         tar -czvf "$BACKUP_FILE" "$DOCKGE_PATH"
+
+         # 检查备份是否成功
+        if [ $? -ne 0 ]; then
+            echo "备份文件失败，请检查是否有权限写入备份文件。"
+            exit 1
+        fi
 
         # 删除目录
         echo "正在删除安装目录：$DOCKGE_PATH 和 $STACKS_PATH"
