@@ -104,3 +104,10 @@ wget -O tcpx.sh "https://github.com/ylx2016/Linux-NetSpeed/raw/master/tcpx.sh" &
 ```sh
 bash <(curl -sL https://raw.githubusercontent.com/coldrook/vps-easyset/refs/heads/main/dc.sh)
 ```
+
+## 简易的dockge安装脚本，可自定义安装位置及端口
+
+```sh
+bash <(curl -sL https://raw.githubusercontent.com/coldrook/vps-easyset/refs/heads/main/dc.sh)
+```
+
