@@ -194,19 +194,24 @@ case "$operation" in
                             [yY] )
                                 echo "开始恢复备份..."
                                 echo "警告：恢复备份将覆盖现有文件！"
-                                # 获取备份文件中的目录路径
-                                BACKUP_CONTENT=$(tar -tf "$LATEST_BACKUP" | head -n 1)
-                                DOCKGE_PATH=$(echo "$BACKUP_CONTENT" | awk -F/ '{print "/"$2"/"$3}')
-                                STACKS_PATH=$(echo "$BACKUP_CONTENT" | awk -F/ '{print "/"$2"/stacks"}')
-                                # 解压备份文件 (需要根据实际情况调整解压路径)
-                                # 确保目标目录存在
-                                mkdir -p "$DOCKGE_PATH"
-                                mkdir -p "$STACKS_PATH"
-                                # 解压备份文件到正确的目录
-                                tar -xzvf "$LATEST_BACKUP" -C "$DOCKGE_PARENT_DIR" --strip-components=1
-                                # 移动解压后的内容到正确的目录
-                                find "$DOCKGE_PARENT_DIR" -mindepth 1 -maxdepth 1 -type d -name "$(basename "$DOCKGE_PATH")" -exec sh -c 'mv "$1"/* "$DOCKGE_PATH"' sh {} \;
-                                find "$DOCKGE_PARENT_DIR" -mindepth 1 -maxdepth 1 -type d -name "$(basename "$STACKS_PATH")" -exec sh -c 'mv "$1"/* "$STACKS_PATH"' sh {} \;
+
+                                # 解压备份文件到临时目录
+                                TEMP_DIR=$(mktemp -d)
+                                tar -xzvf "$LATEST_BACKUP" -C "$TEMP_DIR"
+
+                                # 复制备份文件内容到目标目录，覆盖现有文件
+                                if [ -d "$TEMP_DIR/dockge" ]; then
+                                    echo "正在恢复 dockge 目录..."
+                                    cp -rf "$TEMP_DIR/dockge"/* "$DOCKGE_PATH"
+                                fi
+                                if [ -d "$TEMP_DIR/stacks" ]; then
+                                    echo "正在恢复 stacks 目录..."
+                                    cp -rf "$TEMP_DIR/stacks"/* "$STACKS_PATH"
+                                fi
+
+                                # 删除临时目录
+                                rm -rf "$TEMP_DIR"
+
                                 echo "备份恢复完成。"
                                 # 输出访问地址
                                 echo "Dockge 恢复完成!"
