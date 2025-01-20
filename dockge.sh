@@ -34,7 +34,7 @@ case "$operation" in
                 echo "选择 Home 位置安装/更新..."
                 STACKS_PATH="/home/stacks"
                 DOCKGE_PATH="/home/dockge"
-                read -p "请输入自定义端口号 (例如: 12345): " PORT
+                read -p "请输入自定义端口号 (例如: 57949): " PORT
                 # 检查端口是否为空
                 if [ -z "$PORT" ]; then
                   PORT="5001" # 如果用户没有输入，则使用默认端口
@@ -172,10 +172,19 @@ case "$operation" in
         esac
 
 
-        # 停止 Dockge 容器
-        echo "正在停止 Dockge 容器..."
+        # 停止并删除容器
+        echo "正在停止并删除 Dockge 容器..."
         cd "$DOCKGE_PATH"
-        docker compose stop
+        docker compose down
+
+        # 获取 Dockge 使用的镜像
+        DOCKGE_IMAGE=$(docker compose images | awk 'NR==2 {print $3}')
+
+         # 删除镜像
+        if [ -n "$DOCKGE_IMAGE" ]; then
+            echo "正在删除 Dockge 镜像：$DOCKGE_IMAGE"
+            docker rmi "$DOCKGE_IMAGE"
+        fi
 
         # 获取上一级目录
         DOCKGE_PARENT_DIR=$(dirname "$DOCKGE_PATH")
@@ -204,7 +213,11 @@ case "$operation" in
         echo "正在清理 Docker 网络..."
         docker network prune -f
 
-        echo "Dockge 卸载完成，但 Dockge 运行的镜像已保留！备份文件已保存到：$BACKUP_FILE"
+        # 删除未使用的镜像
+        echo "正在清理未使用的 Docker 镜像..."
+        docker image prune -a -f
+
+        echo "Dockge 卸载完成！备份文件已保存到：$BACKUP_FILE"
         ;;
     3)
         # 恢复备份部分
