@@ -27,7 +27,7 @@ case "$operation" in
                 echo "选择 Home 位置安装/更新..."
                 STACKS_PATH="/home/stacks"
                 DOCKGE_PATH="/home/dockge"
-                read -p "请输入自定义端口号 (例如: 12345): " PORT
+                read -p "请输入自定义端口号 (例如: 57949): " PORT
                 # 检查端口是否为空
                 if [ -z "$PORT" ]; then
                   PORT="5001" # 如果用户没有输入，则使用默认端口
@@ -198,6 +198,18 @@ case "$operation" in
         rm -rf "$DOCKGE_PATH"
         rm -rf "$STACKS_PATH"
 
+        # 删除 Docker 卷
+        echo "正在清理 Docker 卷..."
+        docker volume prune -f
+
+        # 删除 Docker 网络
+        echo "正在清理 Docker 网络..."
+        docker network prune -f
+
+        # 删除未使用的镜像
+        echo "正在清理未使用的 Docker 镜像..."
+        docker image prune -a -f
+
         echo "Dockge 卸载完成！备份文件已保存到：$BACKUP_FILE"
         ;;
     *)
@@ -205,3 +217,4 @@ case "$operation" in
         exit 1
         ;;
 esac
+
