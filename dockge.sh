@@ -203,7 +203,7 @@ case "$operation" in
                                 mkdir -p "$DOCKGE_PATH"
                                 mkdir -p "$STACKS_PATH"
                                 # 解压备份文件到正确的目录
-                                tar -xzvf "$LATEST_BACKUP" -C "$DOCKGE_PARENT_DIR"
+                                tar -xzvf "$LATEST_BACKUP" -C "$DOCKGE_PARENT_DIR" --strip-components=1
                                 # 移动解压后的内容到正确的目录
                                 find "$DOCKGE_PARENT_DIR" -mindepth 1 -maxdepth 1 -type d -name "$(basename "$DOCKGE_PATH")" -exec sh -c 'mv "$1"/* "$DOCKGE_PATH"' sh {} \;
                                 find "$DOCKGE_PARENT_DIR" -mindepth 1 -maxdepth 1 -type d -name "$(basename "$STACKS_PATH")" -exec sh -c 'mv "$1"/* "$STACKS_PATH"' sh {} \;
