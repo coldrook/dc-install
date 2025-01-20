@@ -3,13 +3,13 @@
 # 打印欢迎信息
 echo "欢迎使用 Dockge 安装/卸载脚本!"
 echo "请选择操作:"
-echo "1. 安装 Dockge"
+echo "1. 安装/更新 Dockge"
 echo "2. 卸载 Dockge"
 read -p "请输入选项 (1/2): " operation
 
 case "$operation" in
     1)
-        # 安装部分
+        # 安装/更新部分
         echo "请选择安装位置:"
         echo "1. 默认位置 (/opt/stacks 和 /opt/dockge)"
         echo "2. Home 位置 (/home/stacks 和 /home/dockge)"
@@ -18,16 +18,16 @@ case "$operation" in
 
         case "$choice" in
             1)
-                echo "选择默认位置安装..."
+                echo "选择默认位置安装/更新..."
                 STACKS_PATH="/opt/stacks"
                 DOCKGE_PATH="/opt/dockge"
                 PORT="5001" # 默认端口
                 ;;
             2)
-                echo "选择 Home 位置安装..."
+                echo "选择 Home 位置安装/更新..."
                 STACKS_PATH="/home/stacks"
                 DOCKGE_PATH="/home/dockge"
-                 read -p "请输入自定义端口号 (例如: 57949): " PORT
+                read -p "请输入自定义端口号 (例如: 57949): " PORT
                 # 检查端口是否为空
                 if [ -z "$PORT" ]; then
                   PORT="5001" # 如果用户没有输入，则使用默认端口
@@ -50,48 +50,74 @@ case "$operation" in
                 ;;
         esac
 
-        # 创建目录
-        echo "正在创建目录：$STACKS_PATH 和 $DOCKGE_PATH"
-        mkdir -p "$STACKS_PATH"
-        mkdir -p "$DOCKGE_PATH"
+        # 检查 Dockge 是否已安装
+        if [ -d "$DOCKGE_PATH" ]; then
+            echo "检测到 Dockge 已安装，正在尝试更新..."
+            cd "$DOCKGE_PATH"
+             # 下载 compose.yaml
+            echo "正在下载 compose.yaml 文件..."
+            if [ "$choice" -eq 1 ]; then
+              curl "https://raw.githubusercontent.com/louislam/dockge/master/compose.yaml" --output compose.yaml
+            else
+              curl "https://dockge.kuma.pet/compose.yaml?port=$PORT&stacksPath=$STACKS_PATH" --output compose.yaml
+            fi
 
-        # 进入 dockge 目录
-        cd "$DOCKGE_PATH"
+             if [ $? -ne 0 ]; then
+                echo "下载 compose.yaml 文件失败，请检查网络连接。"
+                exit 1
+            fi
+            docker compose pull
+            docker compose up -d
+            if [ $? -ne 0 ]; then
+            echo "更新 Dockge 失败，请检查 Docker 是否正常运行。"
+            exit 1
+            fi
 
-        # 下载 compose.yaml
-        echo "正在下载 compose.yaml 文件..."
-        if [ "$choice" -eq 1 ]; then
-            curl "https://raw.githubusercontent.com/louislam/dockge/master/compose.yaml" --output compose.yaml
         else
-            curl "https://dockge.kuma.pet/compose.yaml?port=$PORT&stacksPath=$STACKS_PATH" --output compose.yaml
+            echo "未检测到 Dockge 安装，正在进行安装..."
+             # 创建目录
+            echo "正在创建目录：$STACKS_PATH 和 $DOCKGE_PATH"
+            mkdir -p "$STACKS_PATH"
+            mkdir -p "$DOCKGE_PATH"
+
+            # 进入 dockge 目录
+            cd "$DOCKGE_PATH"
+
+            # 下载 compose.yaml
+            echo "正在下载 compose.yaml 文件..."
+            if [ "$choice" -eq 1 ]; then
+                curl "https://raw.githubusercontent.com/louislam/dockge/master/compose.yaml" --output compose.yaml
+            else
+                curl "https://dockge.kuma.pet/compose.yaml?port=$PORT&stacksPath=$STACKS_PATH" --output compose.yaml
+            fi
+
+            if [ $? -ne 0 ]; then
+                echo "下载 compose.yaml 文件失败，请检查网络连接。"
+                exit 1
+            fi
+
+            # 启动 Dockge
+            echo "正在启动 Dockge..."
+            docker compose up -d
+
+            if [ $? -ne 0 ]; then
+                echo "启动 Dockge 失败，请检查 Docker 是否正常运行。"
+                exit 1
+            fi
         fi
 
-        if [ $? -ne 0 ]; then
-            echo "下载 compose.yaml 文件失败，请检查网络连接。"
-            exit 1
+        # 获取所有 IPv4 地址，并取最后一个
+        IPV4_ADDRESSES=$(ip -4 route get 1 2>/dev/null | grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' | tail -n 1)
+        if [ -z "$IPV4_ADDRESSES" ]; then
+            IPV4_ADDRESSES=$(hostname -I | awk '{print $NF}' 2>/dev/null)
         fi
-
-        # 启动 Dockge
-        echo "正在启动 Dockge..."
-        docker compose up -d
-
-        if [ $? -ne 0 ]; then
-            echo "启动 Dockge 失败，请检查 Docker 是否正常运行。"
-            exit 1
-        fi
-
-        # 获取 IPv4 地址
-        IPV4_ADDRESS=$(ip -4 route get 1 | grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' 2>/dev/null)
-        if [ -z "$IPV4_ADDRESS" ]; then
-            IPV4_ADDRESS=$(hostname -I | awk '{print $1}' 2>/dev/null)
-        fi
-
+        
         # 获取 IPv6 地址
         IPV6_ADDRESS=$(ip -6 route get 1 2>/dev/null | awk '{print $NF;exit}')
 
         # 选择 IP 地址
-        if [ -n "$IPV4_ADDRESS" ]; then
-           IP_ADDRESS="$IPV4_ADDRESS"
+        if [ -n "$IPV4_ADDRESSES" ]; then
+            IP_ADDRESS="$IPV4_ADDRESSES"
         elif [ -n "$IPV6_ADDRESS" ] && [[ "$IPV6_ADDRESS" != "1" ]]; then
             IP_ADDRESS="[$IPV6_ADDRESS]" # IPv6 地址需要用方括号括起来
         else
@@ -100,7 +126,7 @@ case "$operation" in
         fi
 
         # 输出访问地址
-        echo "Dockge 安装完成!"
+        echo "Dockge 安装/更新完成!"
         echo "访问地址：http://$IP_ADDRESS:$PORT"
         echo "请使用 docker ps 查看容器是否正常运行"
         ;;
