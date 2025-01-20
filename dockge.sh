@@ -84,12 +84,12 @@ case "$operation" in
         IPV4_ADDRESS=$(ip -4 route get 1 | awk '{print $NF;exit}' 2>/dev/null)
 
         # 获取 IPv6 地址
-        IPV6_ADDRESS=$(ip -6 route get 1 | awk '{print $NF;exit}' 2>/dev/null)
+        IPV6_ADDRESS=$(ip -6 route get 1 2>/dev/null | awk '{print $NF;exit}')
 
         # 选择 IP 地址
         if [ -n "$IPV4_ADDRESS" ]; then
             IP_ADDRESS="$IPV4_ADDRESS"
-        elif [ -n "$IPV6_ADDRESS" ]; then
+        elif [ -n "$IPV6_ADDRESS" ] && [[ "$IPV6_ADDRESS" != "1" ]]; then
             IP_ADDRESS="[$IPV6_ADDRESS]" # IPv6 地址需要用方括号括起来
         else
             IP_ADDRESS="localhost" # 如果都获取不到，则使用 localhost
