@@ -1,0 +1,93 @@
+#!/bin/bash
+
+# 打印欢迎信息
+echo "欢迎使用 Dockge 安装脚本!"
+echo "请选择安装位置:"
+echo "1. 默认位置 (/opt/stacks 和 /opt/dockge)"
+echo "2. Home 位置 (/home/stacks 和 /home/dockge)"
+echo "3. 自定义位置"
+read -p "请输入选项 (1/2/3): " choice
+
+case "$choice" in
+    1)
+        echo "选择默认位置安装..."
+        STACKS_PATH="/opt/stacks"
+        DOCKGE_PATH="/opt/dockge"
+        PORT="5001" # 默认端口
+        ;;
+    2)
+        echo "选择 Home 位置安装..."
+        STACKS_PATH="/home/stacks"
+        DOCKGE_PATH="/home/dockge"
+        read -p "请输入自定义端口号 (例如: 57949): " PORT
+        # 检查端口是否为空
+        if [ -z "$PORT" ]; then
+          PORT="5001" # 如果用户没有输入，则使用默认端口
+        fi
+        ;;
+    3)
+        read -p "请输入自定义 stacks 目录路径 (例如: /mnt/my_stacks): " STACKS_PATH
+        read -p "请输入自定义 dockge 目录路径 (例如: /mnt/my_dockge): " DOCKGE_PATH
+        read -p "请输入自定义端口号 (例如: 57949): " PORT
+
+        # 检查路径是否为空
+        if [ -z "$STACKS_PATH" ] || [ -z "$DOCKGE_PATH" ]; then
+          echo "错误：自定义路径不能为空。请重新运行脚本。"
+          exit 1
+        fi
+        ;;
+    *)
+        echo "无效的选项，请重新运行脚本。"
+        exit 1
+        ;;
+esac
+
+# 创建目录
+echo "正在创建目录：$STACKS_PATH 和 $DOCKGE_PATH"
+mkdir -p "$STACKS_PATH"
+mkdir -p "$DOCKGE_PATH"
+
+# 进入 dockge 目录
+cd "$DOCKGE_PATH"
+
+# 下载 compose.yaml
+echo "正在下载 compose.yaml 文件..."
+if [ "$choice" -eq 1 ]; then
+    curl "https://raw.githubusercontent.com/louislam/dockge/master/compose.yaml" --output compose.yaml
+else
+    curl "https://dockge.kuma.pet/compose.yaml?port=$PORT&stacksPath=$STACKS_PATH" --output compose.yaml
+fi
+
+if [ $? -ne 0 ]; then
+    echo "下载 compose.yaml 文件失败，请检查网络连接。"
+    exit 1
+fi
+
+# 启动 Dockge
+echo "正在启动 Dockge..."
+docker compose up -d
+
+if [ $? -ne 0 ]; then
+    echo "启动 Dockge 失败，请检查 Docker 是否正常运行。"
+    exit 1
+fi
+
+# 获取 IPv4 地址
+IPV4_ADDRESS=$(ip -4 route get 1 | awk '{print $NF;exit}' 2>/dev/null)
+
+# 获取 IPv6 地址
+IPV6_ADDRESS=$(ip -6 route get 1 | awk '{print $NF;exit}' 2>/dev/null)
+
+# 选择 IP 地址
+if [ -n "$IPV4_ADDRESS" ]; then
+    IP_ADDRESS="$IPV4_ADDRESS"
+elif [ -n "$IPV6_ADDRESS" ]; then
+    IP_ADDRESS="[$IPV6_ADDRESS]" # IPv6 地址需要用方括号括起来
+else
+    IP_ADDRESS="localhost" # 如果都获取不到，则使用 localhost
+fi
+
+# 输出访问地址
+echo "Dockge 安装完成!"
+echo "访问地址：http://$IP_ADDRESS:$PORT"
+echo "请使用 docker ps 查看容器是否正常运行"
