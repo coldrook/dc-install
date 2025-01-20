@@ -12,7 +12,8 @@ echo "欢迎使用 Dockge 安装/更新/卸载/恢复脚本!"
 echo "请选择操作:"
 echo "1. 安装/更新 Dockge"
 echo "2. 卸载 Dockge"
-read -p "请输入选项 (1/2): " operation
+echo "3. 取消"
+read -p "请输入选项 (1/2/3): " operation
 
 case "$operation" in
     1)
@@ -21,7 +22,8 @@ case "$operation" in
         echo "1. 默认位置 (/opt/stacks 和 /opt/dockge)"
         echo "2. Home 位置 (/home/stacks 和 /home/dockge)"
         echo "3. 自定义位置"
-        read -p "请输入选项 (1/2/3): " choice
+        echo "4. 取消"
+        read -p "请输入选项 (1/2/3/4): " choice
 
         case "$choice" in
             1)
@@ -34,7 +36,7 @@ case "$operation" in
                 echo "选择 Home 位置安装/更新..."
                 STACKS_PATH="/home/stacks"
                 DOCKGE_PATH="/home/dockge"
-                read -p "请输入自定义端口号 (例如: 12345): " PORT
+                read -p "请输入自定义端口号 (例如: 57949): " PORT
                 # 检查端口是否为空
                 if [ -z "$PORT" ]; then
                   PORT="5001" # 如果用户没有输入，则使用默认端口
@@ -50,6 +52,10 @@ case "$operation" in
                   echo "错误：自定义路径不能为空。请重新运行脚本。"
                   exit 1
                 fi
+                ;;
+            4)
+                echo "取消安装/更新操作。"
+                exit 0
                 ;;
             *)
                 echo "无效的选项，请重新运行脚本。"
@@ -147,7 +153,8 @@ case "$operation" in
                 echo "1. 默认位置 (/opt)"
                 echo "2. Home 位置 (/home)"
                 echo "3. 自定义位置"
-                read -p "请输入选项 (1/2/3): " restore_location_choice
+                echo "4. 取消"
+                read -p "请输入选项 (1/2/3/4): " restore_location_choice
 
                 case "$restore_location_choice" in
                     1)
@@ -162,6 +169,9 @@ case "$operation" in
                             echo "错误：自定义路径不能为空。请重新运行脚本。"
                             exit 1
                         fi
+                        ;;
+                    4)
+                        echo "取消恢复操作。"
                         ;;
                     *)
                         echo "无效的选项，跳过恢复步骤。"
@@ -189,7 +199,14 @@ case "$operation" in
                                 DOCKGE_PATH=$(echo "$BACKUP_CONTENT" | awk -F/ '{print "/"$2"/"$3}')
                                 STACKS_PATH=$(echo "$BACKUP_CONTENT" | awk -F/ '{print "/"$2"/stacks"}')
                                 # 解压备份文件 (需要根据实际情况调整解压路径)
+                                # 确保目标目录存在
+                                mkdir -p "$DOCKGE_PATH"
+                                mkdir -p "$STACKS_PATH"
+                                # 解压备份文件到正确的目录
                                 tar -xzvf "$LATEST_BACKUP" -C "$DOCKGE_PARENT_DIR"
+                                # 移动解压后的内容到正确的目录
+                                find "$DOCKGE_PARENT_DIR" -mindepth 1 -maxdepth 1 -type d -name "$(basename "$DOCKGE_PATH")" -exec sh -c 'mv "$1"/* "$DOCKGE_PATH"' sh {} \;
+                                find "$DOCKGE_PARENT_DIR" -mindepth 1 -maxdepth 1 -type d -name "$(basename "$STACKS_PATH")" -exec sh -c 'mv "$1"/* "$STACKS_PATH"' sh {} \;
                                 echo "备份恢复完成。"
                                 # 输出访问地址
                                 echo "Dockge 恢复完成!"
@@ -221,7 +238,8 @@ case "$operation" in
         echo "1. 默认位置 (/opt/stacks 和 /opt/dockge)"
         echo "2. Home 位置 (/home/stacks 和 /home/dockge)"
         echo "3. 自定义位置"
-        read -p "请输入选项 (1/2/3): " uninstall_choice
+        echo "4. 取消"
+        read -p "请输入选项 (1/2/3/4): " uninstall_choice
 
         case "$uninstall_choice" in
             1)
@@ -241,6 +259,10 @@ case "$operation" in
                     echo "错误：自定义路径不能为空。请重新运行脚本。"
                     exit 1
                 fi
+                ;;
+            4)
+                echo "取消卸载操作。"
+                exit 0
                 ;;
             *)
                 echo "无效的选项，请重新运行脚本。"
@@ -295,6 +317,10 @@ case "$operation" in
         docker image prune -a -f
 
         echo "Dockge 卸载完成！备份文件已保存到：$BACKUP_FILE"
+        ;;
+    3)
+        echo "取消操作。"
+        exit 0
         ;;
     *)
         echo "无效的选项，请重新运行脚本。"
