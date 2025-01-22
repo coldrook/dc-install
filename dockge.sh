@@ -36,7 +36,7 @@ case "$operation" in
                 echo "选择 Home 位置安装/更新..."
                 STACKS_PATH="/home/stacks"
                 DOCKGE_PATH="/home/dockge"
-                read -p "请输入自定义端口号 (例如: 57949): " PORT
+                read -p "请输入自定义端口号 (例如: 12345): " PORT
                 # 检查端口是否为空
                 if [ -z "$PORT" ]; then
                   PORT="5001" # 如果用户没有输入，则使用默认端口
