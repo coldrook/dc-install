@@ -8,6 +8,16 @@ then
     exit 1
 fi
 
+# 检查 docker-compose 是否可用 (同时兼容 docker-compose 和 docker compose)
+if command -v docker-compose &> /dev/null; then
+  COMPOSE_COMMAND="docker-compose"
+elif command -v docker compose &> /dev/null; then
+  COMPOSE_COMMAND="docker compose"
+else
+  echo "错误: Docker Compose 未安装。请先安装 Docker Compose。"
+  exit 1
+fi
+
 # 函数: 列出 Docker 容器并返回选择的容器 ID
 function select_container() {
   local containers
@@ -122,9 +132,145 @@ function select_container() {
   esac
 }
 
+
+# 函数: 列出 Docker Compose 项目并返回选择的项目名称
+function select_compose_project() {
+  local projects
+  projects=$("$COMPOSE_COMMAND" ls --format "{{.Name}}\t{{.Status}}")
+
+  if [[ -z "$projects" ]]; then
+    echo "没有找到任何 Docker Compose 项目。"
+    return 1
+  fi
+
+  echo "已找到 Docker Compose 项目:"
+  echo "-----------------------------------------"
+  echo "编号\t项目名称\t\t状态"
+  echo "-----------------------------------------"
+
+  IFS=$'\n' read -r -d '' -a project_lines <<< "$projects"
+  local project_names=()
+  local count=1
+
+  for line in "${project_lines[@]}"; do
+    IFS=$'\t' read -r -a parts <<< "$line"
+    project_name="${parts[0]}"
+    project_status="${parts[1]}" # 状态可能不太准确，docker compose ls 的状态比较简单
+    echo "$count\t${project_name}\t\t${project_status}"
+    project_names+=("$project_name")
+    ((count++))
+  done
+
+  echo "-----------------------------------------"
+  read -p "请选择要操作的 Docker Compose 项目编号 (或按 'q' 退出): " choice
+
+  if [[ "$choice" == "q" ]]; then
+    return 1 # 用户选择退出
+  fi
+
+  if ! [[ "$choice" =~ ^[0-9]+$ ]]; then
+    echo "无效的输入，请输入数字编号。"
+    return 1
+  fi
+
+  if [[ "$choice" -lt 1 || "$choice" -gt $((count - 1)) ]]; then
+    echo "无效的项目编号。"
+    return 1
+  fi
+
+  selected_index=$((choice - 1))
+  selected_project_name="${project_names[$selected_index]}"
+  echo "你选择了 Docker Compose 项目: ${selected_project_name}"
+  echo "-----------------------------------------"
+  echo "请选择操作:"
+  echo "1. 启动项目 (up -d)"
+  echo "2. 停止项目 (down)"
+  echo "3. 重启项目 (restart)"
+  echo "4. 删除项目 (down --rmi all --volumes --remove-orphans -v)" # 更彻底的删除
+  echo "-----------------------------------------"
+  read -p "请选择操作编号 (1/2/3/4 或按 'q' 退出): " action_choice
+
+  if [[ "$action_choice" == "q" ]]; then
+    return 1 # 用户选择退出
+  fi
+
+  case "$action_choice" in
+    1)
+      echo "正在启动 Docker Compose 项目 '${selected_project_name}'..."
+      pushd "$selected_project_name" > /dev/null 2>&1  # 假设项目目录名和项目名相同，并切换到项目目录
+      "$COMPOSE_COMMAND" up -d
+      popd > /dev/null 2>&1 # 返回原来的目录
+      if [[ $? -eq 0 ]]; then
+        echo "Docker Compose 项目 '${selected_project_name}' 已成功启动。"
+      else
+        echo "启动 Docker Compose 项目 '${selected_project_name}' 失败。"
+      fi
+      ;;
+    2)
+      echo "正在停止 Docker Compose 项目 '${selected_project_name}'..."
+      pushd "$selected_project_name" > /dev/null 2>&1 # 假设项目目录名和项目名相同，并切换到项目目录
+      "$COMPOSE_COMMAND" down
+      popd > /dev/null 2>&1 # 返回原来的目录
+      if [[ $? -eq 0 ]]; then
+        echo "Docker Compose 项目 '${selected_project_name}' 已成功停止。"
+      else
+        echo "停止 Docker Compose 项目 '${selected_project_name}' 失败。"
+      fi
+      ;;
+    3)
+      echo "正在重启 Docker Compose 项目 '${selected_project_name}'..."
+      pushd "$selected_project_name" > /dev/null 2>&1 # 假设项目目录名和项目名相同，并切换到项目目录
+      "$COMPOSE_COMMAND" restart
+      popd > /dev/null 2>&1 # 返回原来的目录
+      if [[ $? -eq 0 ]]; then
+        echo "Docker Compose 项目 '${selected_project_name}' 已成功重启。"
+      else
+        echo "重启 Docker Compose 项目 '${selected_project_name}' 失败。"
+      fi
+      ;;
+    4)
+      echo "正在删除 Docker Compose 项目 '${selected_project_name}' (包括镜像和卷)..."
+      pushd "$selected_project_name" > /dev/null 2>&1 # 假设项目目录名和项目名相同，并切换到项目目录
+      "$COMPOSE_COMMAND" down --rmi all --volumes --remove-orphans -v
+      popd > /dev/null 2>&1 # 返回原来的目录
+      if [[ $? -eq 0 ]]; then
+        echo "Docker Compose 项目 '${selected_project_name}' 已成功删除。"
+      else
+        echo "删除 Docker Compose 项目 '${selected_project_name}' 失败。"
+      fi
+      ;;
+    *)
+      echo "无效的操作编号。"
+      ;;
+  esac
+}
+
+
 # 主程序
-select_container
+echo "请选择要管理的对象:"
+echo "1. Docker 容器"
+echo "2. Docker Compose 项目"
+echo "-----------------------------------------"
+read -p "请选择 (1/2 或按 'q' 退出): " management_choice
+
+if [[ "$management_choice" == "q" ]]; then
+  echo "退出脚本。"
+  exit 0
+fi
+
+case "$management_choice" in
+  1)
+    select_container
+    ;;
+  2)
+    select_compose_project
+    ;;
+  *)
+    echo "无效的选择。"
+    exit 1
+    ;;
+esac
+
 
 echo "脚本执行完毕。"
-
 exit 0
