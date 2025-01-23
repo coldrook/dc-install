@@ -108,7 +108,7 @@ bash <(curl -sL https://raw.githubusercontent.com/coldrook/vps-easyset/refs/head
 ## 简易的dockge安装脚本，可自定义安装位置及端口
 
 ```sh
-bash <(curl -sL https://raw.githubusercontent.com/coldrook/vps-easyset/refs/heads/main/dockge.sh)
+bash <(curl -sL https://raw.githubusercontent.com/coldrook/vps-easyset/refs/heads/main/easydocker.sh)
 ```
 
 ## 简易的docker管理脚本，不依赖dockge
