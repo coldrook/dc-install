@@ -114,5 +114,5 @@ bash <(curl -sL https://raw.githubusercontent.com/coldrook/vps-easyset/refs/head
 ## 简易的docker管理脚本，不依赖dockge
 
 ```sh
-bash <(curl -sL https://raw.githubusercontent.com/coldrook/vps-easyset/refs/heads/main/easydocker.sh)  
+bash <(curl -sL https://raw.githubusercontent.com/coldrook/vps-easyset/refs/heads/main/easydocker.sh)
 ```
