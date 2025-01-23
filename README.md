@@ -99,7 +99,7 @@ wget -O clawtcp.sh "https://raw.githubusercontent.com/coldrook/claw-XanMod/refs/
 wget -O tcpx.sh "https://github.com/ylx2016/Linux-NetSpeed/raw/master/tcpx.sh" && chmod +x tcpx.sh && ./tcpx.sh
 ```
 
-## 简易的docker-compose安装脚本，对全局日志进行了限制
+## 简易的Docker Compose安装脚本，对全局日志进行了限制
 
 ```sh
 bash <(curl -sL https://raw.githubusercontent.com/coldrook/vps-easyset/refs/heads/main/dc.sh)
