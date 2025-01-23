@@ -20,34 +20,28 @@ fi
 
 # 函数: 列出 Docker 容器并返回选择的容器 ID
 function select_container() {
-  local containers
-  containers=$(docker container ls -a --format "{{.ID}}\t{{.Names}}\t{{.Status}}")
-
-  if [[ -z "$containers" ]]; then
-    echo "没有找到任何 Docker 容器。"
-    return 1
-  fi
+  local container_lines=()
+  local container_ids=()
+  local container_names=()
+  local count=1
 
   echo "已安装的 Docker 容器:"
   echo "---------------------------------------------------------"
   echo "编号\t容器 ID\t\t容器名称\t\t状态"
   echo "---------------------------------------------------------"
 
-  IFS=$'\n' read -r -d '' -a container_lines <<< "$containers"
-  local container_ids=()
-  local container_names=()
-  local count=1
-
-  for line in "${container_lines[@]}"; do
-    IFS=$'\t' read -r -a parts <<< "$line"
-    container_id="${parts[0]}"
-    container_name="${parts[1]}"
-    container_status="${parts[2]}"
+  docker container ls -a --format "{{.ID}}\t{{.Names}}\t{{.Status}}" | while IFS=$'\t' read -r container_id container_name container_status; do
     echo "$count\t${container_id:0:12}...\t${container_name}\t\t${container_status}"
     container_ids+=("$container_id")
     container_names+=("$container_name")
     ((count++))
   done
+
+  if [[ $count -eq 1 ]]; then # 如果 count 还是 1，说明没有容器被列出（初始值为1）
+    echo "没有找到任何 Docker 容器。"
+    return 1
+  fi
+  count=$((count-1)) # 调整 count，因为循环结束后 count 会多加 1
 
   echo "---------------------------------------------------------"
   read -p "请选择要操作的容器编号 (或按 'q' 退出): " choice
@@ -61,7 +55,7 @@ function select_container() {
     return 1
   fi
 
-  if [[ "$choice" -lt 1 || "$choice" -gt $((count - 1)) ]]; then
+  if [[ "$choice" -lt 1 || "$choice" -gt "$count" ]]; then # 使用调整后的 count
     echo "无效的容器编号。"
     return 1
   fi
@@ -135,31 +129,26 @@ function select_container() {
 
 # 函数: 列出 Docker Compose 项目并返回选择的项目名称
 function select_compose_project() {
-  local projects
-  projects=$("$COMPOSE_COMMAND" ls --format "{{.Name}}\t{{.Status}}")
-
-  if [[ -z "$projects" ]]; then
-    echo "没有找到任何 Docker Compose 项目。"
-    return 1
-  fi
+  local project_lines=()
+  local project_names=()
+  local count=1
 
   echo "已找到 Docker Compose 项目:"
   echo "-----------------------------------------"
   echo "编号\t项目名称\t\t状态"
   echo "-----------------------------------------"
 
-  IFS=$'\n' read -r -d '' -a project_lines <<< "$projects"
-  local project_names=()
-  local count=1
-
-  for line in "${project_lines[@]}"; do
-    IFS=$'\t' read -r -a parts <<< "$line"
-    project_name="${parts[0]}"
-    project_status="${parts[1]}" # 状态可能不太准确，docker compose ls 的状态比较简单
+  "$COMPOSE_COMMAND" ls --format "{{.Name}}\t{{.Status}}" | while IFS=$'\t' read -r project_name project_status; do
     echo "$count\t${project_name}\t\t${project_status}"
     project_names+=("$project_name")
     ((count++))
   done
+
+  if [[ $count -eq 1 ]]; then # 如果 count 还是 1，说明没有项目被列出
+    echo "没有找到任何 Docker Compose 项目。"
+    return 1
+  fi
+  count=$((count-1)) # 调整 count
 
   echo "-----------------------------------------"
   read -p "请选择要操作的 Docker Compose 项目编号 (或按 'q' 退出): " choice
@@ -173,7 +162,7 @@ function select_compose_project() {
     return 1
   fi
 
-  if [[ "$choice" -lt 1 || "$choice" -gt $((count - 1)) ]]; then
+  if [[ "$choice" -lt 1 || "$choice" -gt "$count" ]]; then # 使用调整后的 count
     echo "无效的项目编号。"
     return 1
   fi
