@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 # 检查是否安装了 docker
 if ! command -v docker &> /dev/null
