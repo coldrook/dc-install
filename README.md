@@ -105,6 +105,17 @@ wget -O tcpx.sh "https://github.com/ylx2016/Linux-NetSpeed/raw/master/tcpx.sh" &
 bash <(curl -sL https://raw.githubusercontent.com/coldrook/vps-easyset/refs/heads/main/dc.sh)
 ```
 
+### 卸载所有docker镜像和容器
+
+```sh
+docker rm -f $(docker ps -aq); docker rmi $(docker images -aq)
+```
+### 删除累积的docker日志
+
+```sh
+cd /var/lib/docker/containers/ && for container_id in */; do container_path="/var/lib/docker/containers/${container_id}"; log_file="${container_id%/}-json.log"; rm -rf "${container_path}${log_file}" && echo "已删除 ${container_path}${log_file}"; done
+```
+
 ## 简易的dockge安装脚本，可自定义安装位置及端口
 
 ```sh
